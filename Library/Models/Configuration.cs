@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Library.Models;
 
-public class Model
+public class Configuration
 {
    [JsonPropertyName("required-property")]
    public RequiredPropertyModel RequiredProperty { get; init; } = new();

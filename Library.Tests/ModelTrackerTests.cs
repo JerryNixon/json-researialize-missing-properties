@@ -9,7 +9,7 @@ public class ModelTrackerTests
     [Fact]
     public void GetState_ShouldThrowForNullModel()
     {
-        Model? nullModel = null;
+        Configuration? nullModel = null;
 
         Assert.Throws<ArgumentNullException>(() => 
             nullModel!.GetState());
@@ -18,7 +18,7 @@ public class ModelTrackerTests
     [Fact]
     public void GetState_ShouldReturnSameStateForSameModel()
     {
-        var model = new Model();
+        var model = new Configuration();
 
         var state1 = model.GetState();
         var state2 = model.GetState();
@@ -29,7 +29,7 @@ public class ModelTrackerTests
     [Fact]
     public void SetState_ShouldUpdateModelState()
     {
-        var model = new Model();
+        var model = new Configuration();
         var originalState = new ModelState
         {
             OriginalJsonStructure = JsonNode.Parse("{}"),
@@ -45,7 +45,7 @@ public class ModelTrackerTests
     [Fact]
     public void SetState_ShouldThrowForNullModel()
     {
-        Model? nullModel = null;
+        Configuration? nullModel = null;
         var state = new ModelState();
 
         Assert.Throws<ArgumentNullException>(() => 
@@ -55,7 +55,7 @@ public class ModelTrackerTests
     [Fact]
     public void SetState_ShouldThrowForNullState()
     {
-        var model = new Model();
+        var model = new Configuration();
         ModelState? nullState = null;
 
         Assert.Throws<ArgumentNullException>(() => 

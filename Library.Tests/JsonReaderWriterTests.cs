@@ -26,7 +26,7 @@ namespace Library.Tests
        {
            var json = (string)typeof(Samples).GetProperty(sampleName)!.GetValue(null)!;
 
-           var success = JsonReader.TryRead(json, out Model model);
+           var success = JsonReader.TryRead(json, out Configuration model);
 
            success.Should().BeTrue();
            model.Should().NotBeNull();
@@ -42,7 +42,7 @@ namespace Library.Tests
        {
            var json = (string)typeof(Samples).GetProperty(sampleName)!.GetValue(null)!;
 
-           var success = JsonReader.TryRead(json, out Model model);
+           var success = JsonReader.TryRead(json, out Configuration model);
 
            success.Should().BeFalse();
            model.Should().BeNull();
@@ -56,7 +56,7 @@ namespace Library.Tests
        public void ReadWrite_ShouldPreserveOriginalData(string sampleName)
        {
            var json = (string)typeof(Samples).GetProperty(sampleName)!.GetValue(null)!;
-           var success = JsonReader.TryRead(json, out Model model);
+           var success = JsonReader.TryRead(json, out Configuration model);
            success.Should().BeTrue();
            model.Should().NotBeNull();
 
@@ -65,11 +65,11 @@ namespace Library.Tests
            writeSuccess.Should().BeTrue();
            serializedJson.Should().NotBeNullOrEmpty();
 
-           var expectedModel = JsonSerializer.Deserialize<Model>(json);
-           var actualModel = JsonSerializer.Deserialize<Model>(serializedJson);
+           var expectedModel = JsonSerializer.Deserialize<Configuration>(json);
+           var actualModel = JsonSerializer.Deserialize<Configuration>(serializedJson);
 
            actualModel.Should().BeEquivalentTo(expectedModel, options => options
-               .ComparingByMembers<Model>()
+               .ComparingByMembers<Configuration>()
                .ComparingByMembers<RequiredPropertyModel>());
        }
 

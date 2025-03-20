@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using System.Text.Json.Nodes;
 
 namespace Library.Models;
 
@@ -22,10 +21,4 @@ public static class ModelStateManager
         StateMap.Remove(model);
         StateMap.Add(model, state);
     }
-}
-
-public class ModelState
-{
-    public JsonNode? OriginalJsonStructure { get; set; }
-    public Dictionary<string, bool> PropertyMap { get; set; } = [];
 }
