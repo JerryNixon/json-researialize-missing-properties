@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "required-property": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "boolean"
+                },
+                "nested-property": {
+                    "type": "integer",
+                    "default": 100
+                }
+            },
+            "required": ["value"]
+        },
+        "optional-property": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "required": ["required-property"],
+    "additionalProperties": false
+}
