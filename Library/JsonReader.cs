@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using NJsonSchema;
 using NJsonSchema.Validation;
-using System.Text.Json.Serialization;
 
 namespace Library;
 
@@ -25,107 +25,65 @@ public class JsonReader
     public static bool TryRead<T>(string json, out T? model) where T : class, new()
     {
         model = null;
-        try
-        {
-            // First, validate against schema
-            var jsonNode = JsonNode.Parse(json);
-            if (jsonNode == null)
-                return false;
-                
-            var validationResults = ValidateAgainstSchema(jsonNode);
-            bool isValid = validationResults.Count == 0;
-            
-            // Special handling for sample7 - required property missing value
-            if (!isValid && IsMissingRequiredValue(jsonNode))
-            {
-                return false; // Explicitly return false for this case
-            }
-            
-            // Allow special case for testing - any JSON with optional-property only
-            bool isSpecialCase = false;
-            if (!isValid)
-            {
-                isSpecialCase = IsSpecialCaseFormat(jsonNode);
-                
-                if (!isSpecialCase)
-                    return false;
-            }
-            
-            // Deserialize the JSON
-            model = JsonSerializer.Deserialize<T>(json, DeserializeOptions);
-            
-            if (model == null)
-                return false;
-                
-            // Store original JSON structure for serialization
-            if (model is ITrackableModel trackable)
-            {
-                trackable.OriginalJsonStructure = jsonNode;
-                trackable.IsSpecialCase = isSpecialCase;
-                
-                // Track property presence
-                if (trackable is IPropertyTrackingModel propTracker)
-                {
-                    var properties = GetFlattenedPropertyPaths(jsonNode);
-                    propTracker.InitializeFromPropertyMap(properties);
-                }
-            }
-            
-            return true;
-        }
-        catch
+        
+        if (string.IsNullOrWhiteSpace(json))
         {
             return false;
         }
-    }
-    
-    // Helper method to detect Sample7 case (required property missing required value)
-    private static bool IsMissingRequiredValue(JsonNode jsonNode)
-    {
-        if (jsonNode is JsonObject obj && obj.ContainsKey("required-property"))
+
+        if (!TryParseJson(json, out JsonNode jsonNode))
         {
-            var requiredProp = obj["required-property"];
-            if (requiredProp is JsonObject requiredObj)
-            {
-                return !requiredObj.ContainsKey("value");
-            }
+            return false;
         }
-        
-        return false;
+
+        if (!TryValidateAgainstSchema(jsonNode, out _))
+        {
+            return false;
+        }
+
+        if (!TryDeserializeJson(json, out T resultModel))
+        {
+            return false;
+        }
+
+        TryStoreModelState(resultModel, jsonNode);
+        model = resultModel;
+        return true;
     }
-    
+
     public static bool TryReadFromFile<T>(string filePath, out T? model) where T : class, new()
     {
+        model = null;
+        
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return false;
+        }
+
+        if (!File.Exists(filePath))
+        {
+            return false;
+        }
+
         try
         {
             string json = File.ReadAllText(filePath);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
             return TryRead(json, out model);
         }
         catch
         {
-            model = null;
             return false;
         }
     }
     
-    private static ICollection<ValidationError> ValidateAgainstSchema(JsonNode jsonNode)
+    private static string BuildPropertyPath(string prefix, string propertyName)
     {
-        var validator = new JsonSchemaValidator();
-        return validator.Validate(jsonNode.ToJsonString(), Schema);
-    }
-    
-    private static bool IsSpecialCaseFormat(JsonNode jsonNode)
-    {
-        // Special case is JSON with optional-property but missing required-property
-        if (jsonNode is JsonObject obj)
-        {
-            bool hasOptionalProperty = obj.ContainsKey("optional-property");
-            bool hasRequiredProperty = obj.ContainsKey("required-property");
-            
-            return hasOptionalProperty && !hasRequiredProperty;
-        }
-        
-        return false;
+        return string.IsNullOrEmpty(prefix) ? propertyName : $"{prefix}.{propertyName}";
     }
     
     private static Dictionary<string, bool> GetFlattenedPropertyPaths(JsonNode node, string prefix = "")
@@ -134,35 +92,103 @@ public class JsonReader
         
         if (node is JsonObject obj)
         {
-            foreach (var prop in obj)
-            {
-                string path = string.IsNullOrEmpty(prefix) ? prop.Key : $"{prefix}.{prop.Key}";
-                result[path] = true;
-                
-                if (prop.Value is JsonObject or JsonArray)
-                {
-                    foreach (var nested in GetFlattenedPropertyPaths(prop.Value!, path))
-                    {
-                        result[nested.Key] = nested.Value;
-                    }
-                }
-            }
+            TryProcessJsonObject(obj, prefix, result);
         }
         else if (node is JsonArray arr)
         {
-            for (int i = 0; i < arr.Count; i++)
-            {
-                string path = $"{prefix}[{i}]";
-                if (arr[i] != null)
-                {
-                    foreach (var nested in GetFlattenedPropertyPaths(arr[i]!, path))
-                    {
-                        result[nested.Key] = nested.Value;
-                    }
-                }
-            }
+            TryProcessJsonArray(arr, prefix, result);
         }
         
         return result;
+    }
+
+    private static bool TryDeserializeJson<T>(string json, out T model) where T : class
+    {
+        model = null!;
+        try
+        {
+            var result = JsonSerializer.Deserialize<T>(json, DeserializeOptions);
+            if (result == null)
+            {
+                return false;
+            }
+
+            model = result;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryParseJson(string json, out JsonNode jsonNode)
+    {
+        jsonNode = null!;
+        try
+        {
+            var result = JsonNode.Parse(json);
+            if (result == null)
+            {
+                return false;
+            }
+
+            jsonNode = result;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void TryProcessJsonArray(JsonArray arr, string prefix, Dictionary<string, bool> result)
+    {
+        for (int i = 0; i < arr.Count; i++)
+        {
+            string path = $"{prefix}[{i}]";
+            if (arr[i] != null)
+            {
+                foreach (var nested in GetFlattenedPropertyPaths(arr[i]!, path))
+                {
+                    result[nested.Key] = nested.Value;
+                }
+            }
+        }
+    }
+
+    private static void TryProcessJsonObject(JsonObject obj, string prefix, Dictionary<string, bool> result)
+    {
+        foreach (var prop in obj)
+        {
+            string path = BuildPropertyPath(prefix, prop.Key);
+            result[path] = true;
+            
+            if (prop.Value is JsonObject or JsonArray)
+            {
+                foreach (var nested in GetFlattenedPropertyPaths(prop.Value!, path))
+                {
+                    result[nested.Key] = nested.Value;
+                }
+            }
+        }
+    }
+
+    private static void TryStoreModelState<T>(T model, JsonNode jsonNode) where T : class
+    {
+        var modelState = new ModelState
+        {
+            OriginalJsonStructure = jsonNode,
+            PropertyMap = GetFlattenedPropertyPaths(jsonNode)
+        };
+        
+        ModelStateTracker<T>.SetState(model, modelState);
+    }
+    
+    private static bool TryValidateAgainstSchema(JsonNode jsonNode, out ICollection<ValidationError> errors)
+    {
+        var validator = new JsonSchemaValidator();
+        errors = validator.Validate(jsonNode.ToJsonString(), Schema);
+        return errors.Count == 0;
     }
 }
