@@ -4,20 +4,20 @@ namespace Library;
 
 public class SampleModel
 {
-    [JsonPropertyName("required-property")]
-    public RequiredPropertyModel RequiredProperty { get; set; } = new();
+   [JsonPropertyName("required-property")]
+   public RequiredPropertyModel RequiredProperty { get; init; } = new();
 
-    [JsonPropertyName("optional-property")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public bool OptionalProperty { get; set; } = true;
+   [JsonPropertyName("optional-property")]
+   [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+   public bool OptionalProperty { get; init; } = true;
 }
 
 public class RequiredPropertyModel
 {
-    [JsonPropertyName("value")]
-    public bool Value { get; set; }
-    
-    [JsonPropertyName("nested-property")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public int NestedProperty { get; set; } = 100;
+   [JsonPropertyName("value")]
+   public bool Value { get; init; }
+   
+   [JsonPropertyName("nested-property")]
+   [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+   public int NestedProperty { get; init; } = 100;
 }

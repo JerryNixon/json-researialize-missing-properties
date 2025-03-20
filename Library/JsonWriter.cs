@@ -1,105 +1,76 @@
-using System.Text.Json.Nodes;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Library;
 
 public class JsonWriter
 {
-    private static readonly JsonSerializerOptions SerializeOptions = new()
-    {
-        PropertyNamingPolicy = null,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-        WriteIndented = false
-    };
-
     public static bool TryWrite<T>(T model, out string json) where T : class
     {
         json = string.Empty;
-        
+
         if (model == null)
         {
             return false;
         }
 
-        try
+        if (TryGetOriginalJson(model, out string originalJson))
         {
-            if (TryGetOriginalJson(model, out string originalJson))
-            {
-                json = originalJson;
-                return true;
-            }
-            
-            if (TrySerializeModel(model, out string serializedJson))
-            {
-                json = serializedJson;
-                return true;
-            }
-            
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    
-    public static bool TryWriteToFile<T>(T model, string filePath) where T : class
-    {
-        if (model == null || string.IsNullOrWhiteSpace(filePath))
-        {
-            return false;
+            json = originalJson;
         }
 
-        try
+        if (TrySerializeModel(model, out string serializedJson))
         {
-            if (!TryWrite(model, out string json))
-            {
-                return false;
-            }
+            json = serializedJson;
+        }
 
-            File.WriteAllText(filePath, json);
+        if (json.CompliesWithSchema())
+        {
             return true;
         }
-        catch
-        {
-            return false;
-        }
+
+        return false;
     }
-    
+
     private static bool TryGetOriginalJson<T>(T model, out string json) where T : class
     {
         json = string.Empty;
-        
+
         var state = ModelStateTracker<T>.GetState(model);
         if (state.OriginalJsonStructure == null)
         {
             return false;
         }
 
-        try
-        {
-            json = state.OriginalJsonStructure.ToJsonString();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        json = state.OriginalJsonStructure.ToJsonString();
+        return true;
     }
-    
+
+    private static readonly JsonSerializerOptions jsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = null,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+    };
+
     private static bool TrySerializeModel<T>(T model, out string json) where T : class
     {
-        json = string.Empty;
-        
-        try
+        var state = ModelStateTracker<T>.GetState(model);
+        json = JsonSerializer.Serialize(model, jsonSerializerOptions);
+        return !string.IsNullOrWhiteSpace(json) &&
+               CompareToOriginalPropertyMap(state, json);
+    }
+
+    private static bool CompareToOriginalPropertyMap(ModelState state, string serializedJson)
+    {
+        var serializedNode = JsonNode.Parse(serializedJson);
+        var serializedProperties = new HashSet<string>();
+
+        if (serializedNode is JsonObject jsonObject)
         {
-            json = JsonSerializer.Serialize(model, SerializeOptions);
-            return !string.IsNullOrWhiteSpace(json);
+            serializedProperties = [.. jsonObject.Select(p => p.Key)];
         }
-        catch
-        {
-            return false;
-        }
+
+        return state.PropertyMap.Keys.All(k => serializedProperties.Contains(k.Split('.').Last()));
     }
 }

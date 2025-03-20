@@ -1,11 +1,19 @@
 ﻿using System.Text.Json;
 using FluentAssertions;
-using Xunit;
 
 namespace Library.Tests
 {
     public class JsonReaderWriterTests
     {
+        [Fact]
+        public void Write_ShouldFailWhenBothOriginalJsonAndSerializationFail()
+        {
+            var mockModel = new { NonSerializableProperty = new object() };
+
+            bool success = JsonWriter.TryWrite(mockModel, out string _);
+            success.Should().BeFalse();
+        }
+
         [Theory]
         [InlineData("Sample1", false, true, 100)]
         [InlineData("Sample2", false, true, 100)]
@@ -79,17 +87,6 @@ namespace Library.Tests
         {
             // Act & Assert
             JsonWriter.TryWrite<object>(null!, out string _).Should().BeFalse();
-        }
-
-        [Fact]
-        public void ReadFromFile_ShouldFailForInvalidPath()
-        {
-            // Act
-            var success = JsonReader.TryReadFromFile("non_existent_file.json", out SampleModel? model);
-
-            // Assert
-            success.Should().BeFalse();
-            model.Should().BeNull();
         }
     }
 }

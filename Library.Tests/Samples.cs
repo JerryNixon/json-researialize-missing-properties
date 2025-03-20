@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace Library.Tests;
 
 public static class Samples
@@ -26,16 +24,6 @@ public static class Samples
     // Sample 3: Missing required property (special case)
     public static string Sample3 => """
     {
-        "optional-property": true
-    }
-    """;
-
-    // Sample 4: Required property with value and optional property (duplicate of Sample2)
-    public static string Sample4 => """
-    {
-        "required-property": {
-            "value": false
-        },
         "optional-property": true
     }
     """;
@@ -69,27 +57,4 @@ public static class Samples
         }
     }
     """;
-
-    // Dictionary of sample names to content
-    public static Dictionary<string, string> AllSamples => new()
-    {
-        ["sample1.json"] = Sample1,
-        ["sample2.json"] = Sample2,
-        ["sample3.json"] = Sample3,
-        ["sample4.json"] = Sample4,
-        ["sample5.json"] = Sample5,
-        ["sample6.json"] = Sample6,
-        ["sample7.json"] = Sample7
-    };
-
-    // Create sample files for testing
-    public static void CreateSampleFiles(string directory)
-    {
-        Directory.CreateDirectory(directory);
-        
-        foreach (var sample in AllSamples)
-        {
-            File.WriteAllText(Path.Combine(directory, sample.Key), sample.Value);
-        }
-    }
 }
