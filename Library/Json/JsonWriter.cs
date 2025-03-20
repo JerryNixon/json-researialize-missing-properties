@@ -1,8 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Library.Models;
 
-namespace Library;
+namespace Library.Json;
 
 public class JsonWriter
 {
@@ -10,7 +11,7 @@ public class JsonWriter
     {
         json = string.Empty;
 
-        if (model == null)
+        if (model is null)
         {
             return false;
         }
@@ -37,7 +38,7 @@ public class JsonWriter
     {
         json = string.Empty;
 
-        var state = ModelStateTracker<T>.GetState(model);
+        var state = model.GetState();
         if (state.OriginalJsonStructure == null)
         {
             return false;
@@ -55,7 +56,7 @@ public class JsonWriter
 
     private static bool TrySerializeModel<T>(T model, out string json) where T : class
     {
-        var state = ModelStateTracker<T>.GetState(model);
+        var state = model.GetState();
         json = JsonSerializer.Serialize(model, jsonSerializerOptions);
         return !string.IsNullOrWhiteSpace(json) &&
                CompareToOriginalPropertyMap(state, json);

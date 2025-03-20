@@ -2,13 +2,13 @@ using System.Text.Json.Nodes;
 using NJsonSchema;
 using NJsonSchema.Validation;
 
-namespace Library;
+namespace Library.Json;
 
-public static class JsonNodeExtensions
+public static class JsonExtensions
 {
    private static readonly JsonSchema Schema;
 
-   static JsonNodeExtensions()
+   static JsonExtensions()
    {
        string schemaJson = File.ReadAllText("schema.json");
        Schema = JsonSchema.FromJsonAsync(schemaJson).GetAwaiter().GetResult();

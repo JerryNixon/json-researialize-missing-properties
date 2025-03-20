@@ -1,13 +1,14 @@
 using System.Text.Json.Nodes;
 using System.Text.Json;
+using Library.Models;
 
-namespace Library;
+namespace Library.Json;
 
 public class JsonReader
 {
-    public static bool TryRead<T>(string json, out T? model) where T : class, new()
+    public static bool TryRead<T>(string json, out T model) where T : class, new()
     {
-        model = null;
+        model = default!;
 
         if (string.IsNullOrWhiteSpace(json) ||
             !TryParseJson(json, out JsonNode jsonNode) ||
@@ -71,6 +72,6 @@ public class JsonReader
             PropertyMap = GetFlattenedPropertyPaths(jsonNode)
         };
 
-        ModelStateTracker<T>.SetState(model, modelState);
+        model.SetState(modelState);
     }
 }

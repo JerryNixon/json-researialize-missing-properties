@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace Library;
+namespace Library.Models;
 
-public class SampleModel
+public class Model
 {
    [JsonPropertyName("required-property")]
    public RequiredPropertyModel RequiredProperty { get; init; } = new();

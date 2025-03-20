@@ -1,86 +1,74 @@
 using System.Text.Json.Nodes;
 using FluentAssertions;
+using Library.Models;
 
 namespace Library.Tests;
 
-public class ModelStateTrackerTests
+public class ModelTrackerTests
 {
     [Fact]
     public void GetState_ShouldThrowForNullModel()
     {
-        // Arrange
-        SampleModel? nullModel = null;
+        Model? nullModel = null;
 
-        // Act & Assert
         Assert.Throws<ArgumentNullException>(() => 
-            ModelStateTracker<SampleModel>.GetState(nullModel!));
+            nullModel!.GetState());
     }
 
     [Fact]
     public void GetState_ShouldReturnSameStateForSameModel()
     {
-        // Arrange
-        var model = new SampleModel();
+        var model = new Model();
 
-        // Act
-        var state1 = ModelStateTracker<SampleModel>.GetState(model);
-        var state2 = ModelStateTracker<SampleModel>.GetState(model);
+        var state1 = model.GetState();
+        var state2 = model.GetState();
 
-        // Assert
         state1.Should().BeSameAs(state2);
     }
 
     [Fact]
     public void SetState_ShouldUpdateModelState()
     {
-        // Arrange
-        var model = new SampleModel();
+        var model = new Model();
         var originalState = new ModelState
         {
             OriginalJsonStructure = JsonNode.Parse("{}"),
             PropertyMap = new Dictionary<string, bool> { ["test"] = true }
         };
 
-        // Act
-        ModelStateTracker<SampleModel>.SetState(model, originalState);
-        var retrievedState = ModelStateTracker<SampleModel>.GetState(model);
+        model.SetState(originalState);
+        var retrievedState = model.GetState();
 
-        // Assert
         retrievedState.Should().Be(originalState);
     }
 
     [Fact]
     public void SetState_ShouldThrowForNullModel()
     {
-        // Arrange
-        SampleModel? nullModel = null;
+        Model? nullModel = null;
         var state = new ModelState();
 
-        // Act & Assert
         Assert.Throws<ArgumentNullException>(() => 
-            ModelStateTracker<SampleModel>.SetState(nullModel!, state));
+            nullModel!.SetState(state));
     }
 
     [Fact]
     public void SetState_ShouldThrowForNullState()
     {
-        // Arrange
-        var model = new SampleModel();
+        var model = new Model();
         ModelState? nullState = null;
 
-        // Act & Assert
         Assert.Throws<ArgumentNullException>(() => 
-            ModelStateTracker<SampleModel>.SetState(model, nullState!));
+            model.SetState(nullState!));
     }
 
     [Fact]
     public void ModelState_ShouldHaveEmptyPropertyMapByDefault()
     {
-        // Arrange
         var modelState = new ModelState();
 
-        // Assert
         modelState.PropertyMap.Should().BeEmpty();
         modelState.OriginalJsonStructure.Should().BeNull();
     }
 }
+
